@@ -1,0 +1,221 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Status {
+  active
+  disabled
+  deleted
+}
+
+enum Role {
+  employee
+  manager
+  admin
+}
+
+enum ActionType {
+  draft_created
+  draft_updated
+  submitted
+  approved
+  rejected
+  cancelled
+  admin_modified
+}
+
+model Organization {
+  id               String             @id @default(uuid()) @db.Uuid
+  name             String             @db.Text
+  status           Status             @default(active)
+  isDemo           Boolean            @default(false) @map("is_demo")
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt        DateTime?          @map("expires_at") @db.Timestamptz
+  users            User[]
+  authAccounts     AuthAccount[]
+  teams            Team[]
+  teamMemberships  TeamMembership[]
+  leavePolicies    LeavePolicy[]
+  leaveTypes       LeaveType[]
+  leaveRequests    LeaveRequest[]
+  leaveActions     LeaveAction[]
+
+  @@map("organizations")
+}
+
+model User {
+  id                  String              @id @default(uuid()) @db.Uuid
+  organizationId      String              @db.Uuid @map("organization_id")
+  organization        Organization        @relation(fields: [organizationId], references: [id])
+  name                String              @db.Text
+  email               String              @db.Text
+  role                Role                @default(employee)
+  status              Status              @default(active)
+  isDemo              Boolean             @default(false) @map("is_demo")
+  createdAt           DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  requestedLeaves     LeaveRequest[]      @relation("Requester") 
+  managedLeaves       LeaveRequest[]      @relation("Manager")
+  authAccounts        AuthAccount[]
+  teamMemberships     TeamMembership[]
+  createdPolicies     LeavePolicy[]       @relation("PolicyCreator")
+  leaveActions        LeaveAction[]       @relation("ActionActor")
+  leavePolicies LeavePolicy[]
+  
+  @@unique([email,organizationId])
+  @@index([organizationId])
+  @@index([organizationId,role])
+  @@map("users")
+}
+
+model AuthAccount {
+  id                  String        @id @default(uuid()) @db.Uuid 
+  userId              String        @db.Uuid @map("user_id")
+  user                User          @relation(fields: [userId], references: [id])
+  organizationId      String        @db.Uuid @map("organization_id")
+  organization        Organization  @relation(fields: [organizationId], references: [id])
+  provider            String        @db.Text
+  providerAccountId   String?       @db.Text @map("provider_account_id")
+  passwordHash        String?       @db.Text  @map("password_hash")
+  status              Status        @default(active)
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId,provider])
+  @@unique([provider,providerAccountId,organizationId])
+  @@index([organizationId,provider])
+  @@index([provider,providerAccountId])
+  @@map("auth_accounts")
+}
+
+model Team {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @db.Uuid @map("organization_id")
+  organization        Organization    @relation(fields: [organizationId], references: [id])
+  name                String          @db.Text  
+  status              Status          @default(active)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  memberships         TeamMembership[]
+
+  @@unique([  organizationId, name])
+  @@index([ organizationId])
+  @@index([ organizationId,  status])
+  @@map("teams")
+}
+
+
+model TeamMembership {
+  id                  String            @id @default(uuid()) @db.Uuid
+  userId              String            @db.Uuid @map("user_id")
+  user                User              @relation(fields: [userId], references: [id])
+  organizationId      String            @db.Uuid @map("organization_id")
+  organization        Organization      @relation(fields: [organizationId], references: [id])
+  teamId              String            @db.Uuid @map("team_id")
+  team                Team              @relation(fields: [teamId], references: [id])
+  isManager           Boolean           @default(false) @map("is_manager")
+  status              Status            @default(active)
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([userId,teamId])
+  @@index([organizationId])
+  @@index([teamId])
+  @@index([userId])
+  @@index([teamId,isManager])
+  @@index([organizationId,status])
+  @@map("team_memberships")
+}
+
+model LeavePolicy {
+  id                          String              @id @default(uuid()) @db.Uuid
+  organizationId              String              @db.Uuid  @map("organization_id")
+  organization                Organization        @relation(fields: [organizationId], references: [id])
+  name                        String              @db.Text
+  description                 String?             @db.Text
+  status                      Status              @default(active)
+  createdByUser               String              @db.Uuid  @map("created_by_user")
+  user                        User                @relation("PolicyCreator",fields:  [createdByUser], references:  [id])
+  createdAt                   DateTime            @default(now()) @map("created_at")  @db.Timestamptz
+  leaveTypes                  LeaveType[]
+  users                       User[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([organizationId,  status])
+  @@map("leave_policies")
+}
+
+model LeaveType {
+  id                          String          @id @default(uuid())  @db.Uuid
+  organizationId              String          @db.Uuid @map("organization_id")
+  organization                Organization    @relation(fields: [organizationId], references: [id])
+  leavePolicyId               String          @db.Uuid  @map("leave_policy_id")
+  leavePolicy                 LeavePolicy     @relation(fields: [leavePolicyId], references:  [id])
+  name                        String          @db.Text
+  requiresApproval            Boolean         @default(true)  @map("requires_approval")
+  maxDaysPerYear              Int             @map("max_days_per_year")
+  allowNegativeBalance        Boolean         @default(false) @map("allow_negative_balance")
+  status                      Status          @default(active)
+  createdAt                   DateTime        @default(now()) @map("created_at")  @db.Timestamptz
+  leaveRequests LeaveRequest[]
+  
+  @@unique([name,leavePolicyId])
+  @@index([organizationId])
+  @@index([leavePolicyId])
+  @@index([leavePolicyId, status])
+  @@map("leave_types")
+}
+
+model LeaveRequest {
+  id                  String            @id @default(uuid()) @db.Uuid
+  userId              String            @db.Uuid @map("user_id")
+  user                User              @relation("Requester", fields: [ userId], references: [id])
+  organizationId      String            @db.Uuid @map("organization_id")
+  organization        Organization      @relation(fields: [organizationId], references: [id])
+  leaveTypeId         String            @db.Uuid  @map("leave_type_id")
+  leaveType           LeaveType         @relation(fields: [leaveTypeId], references: [id])
+  startDate           DateTime          @db.Date @map("start_date")
+  endDate             DateTime          @db.Date @map("end_date")
+  assignedManagerId   String            @db.Uuid  @map("assigned_manager_id")
+  manager             User              @relation("Manager", fields:[assignedManagerId],references:[id])
+  createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  actions             LeaveAction[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([assignedManagerId])
+  @@index([organizationId,  userId])
+  @@index([organizationId,  assignedManagerId])
+  @@index([leaveTypeId])
+  @@map("leave_requests")
+}
+
+model LeaveAction {
+  id                     String         @id @default(uuid())  @db.Uuid
+  organizationId        String          @db.Uuid  @map("organization_id")
+  organization          Organization    @relation(fields:[organizationId], references:[id])
+  leaveRequestId        String          @db.Uuid  @map("leave_request_id")
+  leaveRequest          LeaveRequest    @relation(fields:[leaveRequestId], references:[id])
+  actorId                String          @db.Uuid @map("actor_id")
+  actor                 User              @relation("ActionActor",fields:[actorId], references:[id])
+  actionType            ActionType        @map("action_type")
+  reason                  String?        @db.Text  
+  metadata              Json?          @db.Json
+  createdAt             DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([leaveRequestId])
+  @@index([organizationId])
+  @@index([actorId])
+  @@index([leaveRequestId, actionType])
+  @@index([leaveRequestId,createdAt])
+  @@index([organizationId,createdAt])
+  @@map("leave_actions")
+}
