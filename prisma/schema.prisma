@@ -70,7 +70,7 @@ model User {
   teamMemberships     TeamMembership[]
   createdPolicies     LeavePolicy[]       @relation("PolicyCreator")
   leaveActions        LeaveAction[]       @relation("ActionActor")
-  leavePolicies LeavePolicy[]
+  leavePolicies       LeavePolicy[]
   
   @@unique([email,organizationId])
   @@index([organizationId])
