@@ -1,5 +1,5 @@
 import React from "react";
-import { getCurrentUser } from "../../lib/auth";
+import { getCurrentUser } from "../../src/lib/auth";
 
 const page = async () => {
   const user = await getCurrentUser();

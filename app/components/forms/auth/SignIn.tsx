@@ -1,7 +1,7 @@
 "use client";
 import { useActionState } from "react";
 import { Input } from "../../atoms/Input";
-import { signIn } from "@/src/app/actions/Identity/signIn";
+import { signIn } from "@/app/actions/Identity/signIn";
 import Button from "../../atoms/Button";
 
 const SignIn = () => {

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Input } from "../../atoms/Input";
-import { createOrg, State } from "@/src/app/actions/Identity/createOrg";
+import { createOrg, State } from "@/app/actions/Identity/createOrg";
 import Button from "../../atoms/Button";
 
 const CreateOrg = () => {
