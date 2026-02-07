@@ -1,4 +1,4 @@
-import { prisma } from "../backend/lib/prisma";
+import { prisma } from "../lib/prisma";
 
 async function testConnection() {
   try {

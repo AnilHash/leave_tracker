@@ -1,7 +1,7 @@
 "use server";
 import bcrypt from "bcrypt";
-import { prisma } from "@/src/backend/lib/prisma";
-import { zodRule } from "@/src/backend/lib/zodRules";
+import { prisma } from "@/src/lib/prisma";
+import { zodRule } from "@/src/lib/zodRules";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { SignJWT } from "jose";

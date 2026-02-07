@@ -1,10 +1,10 @@
 "use server";
 
-import { prisma } from "@/src/backend/lib/prisma";
+import { prisma } from "@/src/lib/prisma";
 import * as z from "zod";
 import bcrypt from "bcrypt";
 import { redirect } from "next/navigation";
-import { zodRule } from "@/src/backend/lib/zodRules";
+import { zodRule } from "@/src/lib/zodRules";
 
 const FormSchema = z
   .object({

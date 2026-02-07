@@ -1,6 +1,6 @@
 import { LeaveAction } from "@/src/backend/domain/types";
 import { ActionType } from "@/src/backend/generated/prisma/enums";
-import { PrismaTransactionType } from "@/src/backend/lib/prisma";
+import { PrismaTransactionType } from "@/src/lib/prisma";
 
 export function createPrismaLeaveRepository() {
   return {
